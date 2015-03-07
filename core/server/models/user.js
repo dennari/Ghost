@@ -2,7 +2,7 @@ var _              = require('lodash'),
     Promise        = require('bluebird'),
     errors         = require('../errors'),
     utils          = require('../utils'),
-    bcrypt         = require('bcryptjs'),
+    bcrypt         = require('bcrypt'),
     ghostBookshelf = require('./base'),
     crypto         = require('crypto'),
     validator      = require('validator'),
@@ -640,6 +640,10 @@ User = ghostBookshelf.Model.extend({
                 return Promise.reject(new Error('The user with that email address is inactive.'));
             }
             if (user.get('status') !== 'locked') {
+                
+                console.log(object)
+                console.log(user.get('password'))
+                
                 return bcryptCompare(object.password, user.get('password')).then(function (matched) {
                     if (!matched) {
                         return Promise.resolve(self.setWarning(user, {validate: false})).then(function (remaining) {
