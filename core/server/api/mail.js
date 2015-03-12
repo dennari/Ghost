@@ -99,7 +99,8 @@ mail = {
                 }
 
                 // insert user-specific data into the email
-                var htmlContent = _.template(fileContent, emailData),
+                //console.log(emailData)
+                var htmlContent = _.template(fileContent)(emailData),
                     textContent;
 
                 // generate a plain-text version of the same email

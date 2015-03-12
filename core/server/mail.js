@@ -19,7 +19,7 @@ GhostMailer.prototype.init = function () {
         return Promise.resolve();
     }
 
-    self.transport = nodemailer.createTransport('direct');
+    self.transport = nodemailer.createTransport();
     self.state.usingDirect = true;
 
     return Promise.resolve();
