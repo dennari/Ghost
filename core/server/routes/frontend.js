@@ -22,7 +22,7 @@ frontendRoutes = function () {
     });
 
     // redirect to /ghost and let that do the authentication to prevent redirects to /ghost//admin etc.
-    router.get(/^\/((ghost-admin|admin|wp-admin|dashboard|signin|login)\/?)$/, function (req, res) {
+    router.get(/^\/((ghost-admin|admin|wp-admin|dashboard|signin|login)?\/?)$/, function (req, res) {
         /*jslint unparam:true*/
         res.redirect(subdir + '/ghost/');
     });
