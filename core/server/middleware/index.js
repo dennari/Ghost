@@ -236,6 +236,9 @@ setupMiddleware = function (blogAppInstance, adminApp) {
     blogApp.use('/shared', express['static'](path.join(corePath, '/shared'), {maxAge: utils.ONE_HOUR_MS}));
     blogApp.use('/content/images', storage.getStorage().serve());
     blogApp.use('/public', express['static'](path.join(corePath, '/built/public'), {maxAge: utils.ONE_YEAR_MS}));
+    if(config.paths.legacyAssets)
+        blogApp.use('/sites', express['static'](config.paths.legacyAssets, {maxAge: utils.ONE_YEAR_MS}));
+
 
     // First determine whether we're serving admin or theme content
     blogApp.use(decideIsAdmin);
