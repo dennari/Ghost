@@ -24,6 +24,21 @@
                 </span>
             </div>
 
+            <div class="form-group for-select">
+                <label for="language-list">Language</label>
+                <span class="input-icon icon-user">
+                    <span class="gh-select" tabindex="0">
+                    {{view "select"
+                        name="post-setting-language"
+                        id="language-list"
+                        content=languages
+                        optionValuePath="content"
+                        optionLabelPath="content"
+                        selection=selectedLanguage}}
+                    </span>
+                </span>
+            </div>
+
             {{#unless session.user.isAuthor}}
             <div class="form-group for-select">
                 <label for="author-list">Author</label>

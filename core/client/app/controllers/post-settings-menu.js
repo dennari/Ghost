@@ -21,6 +21,13 @@ var PostSettingsMenuController = Ember.Controller.extend(SettingsMenuMixin, {
         });
     }.observes('model'),
 
+    initializeSelectedLanguage: function () {
+        var self = this,
+        language =  this.get('model.language');
+        self.set('selectedLanguage', language);
+        return language;
+    }.observes('model'),    
+
     changeAuthor: function () {
         var author = this.get('model.author'),
             selectedAuthor = this.get('selectedAuthor'),
@@ -46,6 +53,32 @@ var PostSettingsMenuController = Ember.Controller.extend(SettingsMenuMixin, {
         });
     }.observes('selectedAuthor'),
 
+
+    changeLanguage: function () {
+        var language = this.get('model.language'),
+            selectedLanguage = this.get('selectedLanguage'),
+            model = this.get('model'),
+            self = this;
+
+        // return if nothing changed
+        if (selectedLanguage === language) {
+            return;
+        }
+
+        model.set('language', selectedLanguage);
+
+        // if this is a new post (never been saved before), don't try to save it
+        if (this.get('model.isNew')) {
+            return;
+        }
+
+        model.save().catch(function (errors) {
+            self.showErrors(errors);
+            self.set('selectedLanguage', language);
+            model.rollback();
+        });
+    }.observes('selectedLanguage'),    
+
     authors: Ember.computed(function () {
         // Loaded asynchronously, so must use promise proxies.
         var deferred = {};
@@ -61,6 +94,10 @@ var PostSettingsMenuController = Ember.Controller.extend(SettingsMenuMixin, {
         return Ember.ArrayProxy
             .extend(Ember.PromiseProxyMixin)
             .create(deferred);
+    }),
+
+    languages: Ember.computed(function () {
+        return Ember.ArrayProxy.create({ content: Ember.A(['en_US', 'fi_FI', 'sv_SE']) });
     }),
 
     /*jshint unused:false */
