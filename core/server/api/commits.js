@@ -131,7 +131,7 @@ commits = {
    * @returns {Promise(Tag)} Newly created Tag
    */
   add: function add(options) {
-    console.log("COMMITS-API: ADD")
+    //console.log(config)
     var repo,
       index,
       oid,
@@ -142,8 +142,14 @@ commits = {
     return getRepo()
       .then(function(repo_) {
         repo = repo_;
-        return repo.openIndex() //repo.openIndex();
+        return repo.getStatus() //repo.openIndex();
       })
+      .then(function(statuses) {
+        if(statuses && statuses.length > 0)
+            return repo.openIndex()    
+        return Promise.reject(new Error("Nothing to commit"))
+
+      })      
       .then(function(index_) {
         index = index_
         return index.addAll() //repo.openIndex();
@@ -176,7 +182,12 @@ commits = {
 
         remote.setCallbacks({
           credentials: function(url, userName) {
-            return git.Cred.userpassPlaintextNew(config.githubUser, config.githubPassword);
+            //console.log(arguments)
+            //console.log(config.publicKey, config.privateKey)
+
+            var privateKey = path.resolve('/Users/dennari/.ssh/id_rsa');
+            var publicKey = path.resolve('/Users/dennari/.ssh/id_rsa.pub');
+            return git.Cred.sshKeyNew(userName, publicKey, privateKey, '');
           }
         });
 
