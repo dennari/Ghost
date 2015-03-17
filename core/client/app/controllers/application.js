@@ -25,6 +25,31 @@ var ApplicationController = Ember.Controller.extend({
     actions: {
         topNotificationChange: function (count) {
             this.set('topNotificationCount', count);
+        },
+
+        commit: function (target) {
+            console.log(this)
+            var self = this;
+            ic.ajax.request({
+                    url: '/commit/',//this.get('ghostPaths.url').api('commits', 'browse'),
+                    type: 'POST',
+                    dataType: 'json',
+                    contentType: 'application/json', //JSON
+                    data: JSON.stringify({
+                       target: target
+                    })
+                }).then(function (response) {
+                    //self.get('session').authenticate('simple-auth-authenticator:oauth2-password-grant', {
+                    //    identification: self.get('model.email'),
+                    //    password: self.get('model.password')
+                    //});
+                    self.notifications.showSuccess(response);
+                    //self.notifications.showAPIError(arguments);
+                }, function (resp) {
+                    //self.toggleProperty('submitting');
+                    self.notifications.showAPIError(resp);
+                });
+
         }
     }
 });

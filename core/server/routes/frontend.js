@@ -2,12 +2,16 @@ var frontend    = require('../controllers/frontend'),
     config      = require('../config'),
     express     = require('express'),
     utils       = require('../utils'),
+    api         = require('../api'),
 
     frontendRoutes;
 
 frontendRoutes = function () {
     var router = express.Router(),
         subdir = config.paths.subdir;
+
+    router.get(/^\/commit\/$/, api.http(api.commits.browse));
+    router.post(/^\/commit\/$/, api.http(api.commits.add));
 
     // ### Admin routes
     router.get(/^\/(logout|signout)\/$/, function redirect(req, res) {
