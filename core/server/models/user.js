@@ -641,9 +641,6 @@ User = ghostBookshelf.Model.extend({
             }
             if (user.get('status') !== 'locked') {
                 
-                console.log(object)
-                console.log(user.get('password'))
-                
                 return bcryptCompare(object.password, user.get('password')).then(function (matched) {
                     if (!matched) {
                         return Promise.resolve(self.setWarning(user, {validate: false})).then(function (remaining) {
