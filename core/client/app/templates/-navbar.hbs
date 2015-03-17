@@ -18,10 +18,15 @@
     {{/link-to}}
     {{/unless}}
 
-    <button type="button" {{action "commit" "devsite"}} {{bind-attr class=":btn :btn-sm view.isDangerous:btn-red:btn-blue :js-publish-button" }}>Devsite</button>
+    <button type="button" 
+    style="margin-top: 15px;"
+    {{action "commit" "devsite"}} 
+    {{bind-attr class=":btn :btn-sm view.isDangerous:btn-red:btn-blue :js-publish-button" }}>
+        Synchronize
+    </button>
     
-    <button type="button" {{action "commit" "production"}} {{bind-attr class=":btn :btn-sm view.isDangerous:btn-red:btn-blue :js-publish-button" }}>Production</button>    
-
+{{!--     <button type="button" {{action "commit" "production"}} {{bind-attr class=":btn :btn-sm view.isDangerous:btn-red:btn-blue :js-publish-button" }}>Production</button> 
+ --}}
     {{! TODO: Mobile-only menu items
 
     <a class="nav-item thing" href="#">

@@ -28,7 +28,7 @@ var ApplicationController = Ember.Controller.extend({
         },
 
         commit: function (target) {
-            console.log(this)
+            //console.log(this)
             var self = this;
             ic.ajax.request({
                     url: '/commit/',//this.get('ghostPaths.url').api('commits', 'browse'),
@@ -39,14 +39,15 @@ var ApplicationController = Ember.Controller.extend({
                        target: target
                     })
                 }).then(function (response) {
-                    //self.get('session').authenticate('simple-auth-authenticator:oauth2-password-grant', {
-                    //    identification: self.get('model.email'),
-                    //    password: self.get('model.password')
-                    //});
-                    self.notifications.showSuccess(response);
-                    //self.notifications.showAPIError(arguments);
+                    var message = "Synchronized the changes to <br>"
+                    if(response && response.target == 'devsite') {
+                        message += '<a href="http://devsite.zoined.com/en/news">devsite</a>'
+                    }
+                    if(response && response.target == 'production') {
+                        message += '<a href="http://zoined.com/en/news">production</a>'
+                    }                    
+                    self.notifications.showSuccess(message.htmlSafe());
                 }, function (resp) {
-                    //self.toggleProperty('submitting');
                     self.notifications.showAPIError(resp);
                 });
 

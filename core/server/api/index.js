@@ -245,6 +245,7 @@ http = function (apiMethod) {
             return addHeaders(apiMethod, req, res, response);
         }).then(function (response) {
             // Send a properly formatting HTTP response containing the data with correct headers
+            console.log(response)
             res.json(response || {});
         }).catch(function onError(error) {
             errors.logError(error);

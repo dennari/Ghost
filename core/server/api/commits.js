@@ -23,6 +23,44 @@ function getRepo() {
   })
 }
 
+function statusToText(status) {
+  var words = [];
+  if (status.isNew()) {
+    words.push("NEW");
+  }
+  if (status.isModified()) {
+    words.push("MODIFIED");
+  }
+  if (status.isTypechange()) {
+    words.push("TYPECHANGE");
+  }
+  if (status.isRenamed()) {
+    words.push("RENAMED");
+  }
+  if (status.isIgnored()) {
+    words.push("IGNORED");
+  }
+
+  return words.join(" ");
+}
+
+function statusArray(statuses) {
+
+  return statuses.map(function(file) {
+    return file.path() + " " + statusToText(file);
+  });
+
+}
+
+function countChanges(statuses) {
+
+  return statuses.reduce(function(count, file) {
+    return file.isModified() || file.isRenamed() || file.isNew() ? count + 1 : count;
+  }, 0);
+
+}
+
+
 /**
  * ## commits API Methods
  *
@@ -41,76 +79,7 @@ commits = {
       .then(function(repo) {
         return repo.getStatus() //repo.openIndex();
       })
-      .then(function(statuses) {
-        function statusToText(status) {
-          var words = [];
-          if (status.isNew()) {
-            words.push("NEW");
-          }
-          if (status.isModified()) {
-            words.push("MODIFIED");
-          }
-          if (status.isTypechange()) {
-            words.push("TYPECHANGE");
-          }
-          if (status.isRenamed()) {
-            words.push("RENAMED");
-          }
-          if (status.isIgnored()) {
-            words.push("IGNORED");
-          }
-
-          return words.join(" ");
-        }
-
-        return statuses.map(function(file) {
-          return file.path() + " " + statusToText(file);
-        });
-
-      })
-
-    // .then(function(index) {
-    //   //index = indexResult;
-    //   return index.read(1);
-    // })
-    // .then(function(indexStuff) {
-    //   // this file is in the root of the directory and doesn't need a full path
-    //   //return index.addByPath(fileName);
-    //   return JSON.stringify(indexStuff)
-    // })
-    // .then(function() {
-    //   // this file is in a subdirectory and can use a relative path
-    //   return index.addByPath(path.join(directoryName, fileName));
-    // })
-    // .then(function() {
-    //   // this will write both files to the index
-    //   return index.write();
-    // })
-    // .then(function() {
-    //   return index.writeTree();
-    // })
-    // .then(function(oidResult) {
-    //   oid = oidResult;
-    //   return git.Reference.nameToId(repo, "HEAD");
-    // })
-    // .then(function(head) {
-    //   return repo.getCommit(head);
-    // })
-    // .then(function(parent) {
-    //   var author = git.Signature.create("Scott Chacon",
-    //     "schacon@gmail.com", 123456789, 60);
-    //   var committer = git.Signature.create("Scott A Chacon",
-    //     "scott@github.com", 987654321, 90);
-
-    //   return repo.createCommit("HEAD", author, committer, "message", oid, [parent]);
-    // })
-    // .done(function(commitId) {
-    //   console.log("New Commit: ", commitId);
-    // });
-    // .catch(function(err){
-    //     //return errors.NotFoundError('Something we')
-    //     return err;
-    // })
+      .then(statusArray)
 
   },
 
@@ -135,9 +104,12 @@ commits = {
     var repo,
       index,
       oid,
-      remote;
+      remote,
+      status,
+      entryCount;
 
     options = options || {};
+    var target = options.target || "devsite";
 
     return getRepo()
       .then(function(repo_) {
@@ -145,17 +117,18 @@ commits = {
         return repo.getStatus() //repo.openIndex();
       })
       .then(function(statuses) {
-        if(statuses && statuses.length > 0)
-            return repo.openIndex()    
-        return Promise.reject(new Error("Nothing to commit"))
+        if (statuses && countChanges(statuses) > 0) {
+          status = statusArray(statuses);
+          return repo.openIndex()
+        }
+        return Promise.reject(new errors.ValidationError("Nothing to commit", "statuses.length"))
 
-      })      
+      })
       .then(function(index_) {
         index = index_
-        return index.addAll() //repo.openIndex();
+        return index.addAll("ghost") //repo.openIndex();
       })
       .then(function() {
-        // this will write both files to the index
         return index.write();
       })
       .then(function() {
@@ -184,7 +157,7 @@ commits = {
           credentials: function(url, userName) {
             var privateKey = config.privateKey || '/Users/dennari/.ssh/id_rsa'
             var publicKey = config.publicKey || '/Users/dennari/.ssh/id_rsa.pub'
-            //console.log(publicKey)
+              //console.log(publicKey)
             return git.Cred.sshKeyNew(userName, publicKey, privateKey, '');
           }
         });
@@ -196,10 +169,15 @@ commits = {
           repo.defaultSignature(),
           "Push to master");
 
-      }).then(function(result){
-        return {success: true}
+      }).then(function(result) {
+        return {
+          pushResult: result,
+          status: status,
+          target: target,
+          entryCount: entryCount
+        }
       }).catch(function(err) {
-        
+
         return Promise.reject(err)
 
       });
