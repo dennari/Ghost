@@ -182,11 +182,9 @@ commits = {
 
         remote.setCallbacks({
           credentials: function(url, userName) {
-            //console.log(arguments)
-            //console.log(config.publicKey, config.privateKey)
-
-            var privateKey = path.resolve('/Users/dennari/.ssh/id_rsa');
-            var publicKey = path.resolve('/Users/dennari/.ssh/id_rsa.pub');
+            var privateKey = config.privateKey || '/Users/dennari/.ssh/id_rsa'
+            var publicKey = config.publicKey || '/Users/dennari/.ssh/id_rsa.pub'
+            console.log(publicKey)
             return git.Cred.sshKeyNew(userName, publicKey, privateKey, '');
           }
         });
@@ -198,9 +196,11 @@ commits = {
           repo.defaultSignature(),
           "Push to master");
 
+      }).then(function(result){
+        return {success: true}
       }).catch(function(err) {
         
-        throw err;
+        return Promise.reject(err)
 
       });
 
