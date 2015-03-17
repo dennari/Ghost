@@ -184,7 +184,7 @@ commits = {
           credentials: function(url, userName) {
             var privateKey = config.privateKey || '/Users/dennari/.ssh/id_rsa'
             var publicKey = config.publicKey || '/Users/dennari/.ssh/id_rsa.pub'
-            console.log(publicKey)
+            //console.log(publicKey)
             return git.Cred.sshKeyNew(userName, publicKey, privateKey, '');
           }
         });
