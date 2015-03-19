@@ -293,12 +293,12 @@ function possiblyCommit(repo, author) {
               if(target === "production") {
                 // NOTHING TO PULL, i.e. all up-to-date, i.e. allowed to push to production
                 actualTarget = target;
-                return merge(repo, "productionn", "master")
+                return merge(repo, "production", "master")
                   .then(function(mergeResult) {
                     if(mergeResult === 0) { // the production is already up-to-date
                       return [];
                     }
-                    return push(repo, "origin", "productionn")
+                    return push(repo, "origin", "production")
                       .then(function(){
                         return ["merged", "pushed"]
                       })
