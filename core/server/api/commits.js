@@ -8,17 +8,21 @@ var Promise = require('bluebird'),
   fs = require("fs"),
   path = require("path"),
   git = require('nodegit'),
-  config = require('../config');
+  config = require('../config'),
+  committer = git.Signature.now("Ghost Editor", "tech@zoined.com");
+
+
+
 
 function getRepo() {
-  var repoPath = config.paths.contentPath + "/../.git";
+  var repoPath = config.paths.contentRepoPath || config.paths.contentPath + "/../.git";
   if (!fs.existsSync(repoPath)) {
     return Promise.reject(new errors.NotFoundError('Invalid git repoPath: ' + repoPath));
   }
 
   return canThis({
     internal: true
-  }).browse.tag().then(function() {
+  }).add.tag().then(function() {
     return git.Repository.open(path.resolve(repoPath))
   })
 }
@@ -60,6 +64,103 @@ function countChanges(statuses) {
 
 }
 
+function credentials(url, userName) {
+  var privateKey = config.privateKey || '/Users/dennari/.ssh/id_rsa';
+  var publicKey = config.publicKey || '/Users/dennari/.ssh/id_rsa.pub';
+  return git.Cred.sshKeyNew(userName, publicKey, privateKey, '');
+}
+
+function pull(repo, remote, branch) {
+  var oid,
+    index;
+
+  return repo.fetch(remote, {
+      credentials: credentials,
+      certificateCheck: function() {
+        return 1;
+      }
+    })
+    .then(function(fetch_) {
+      return repo.mergeBranches(branch, remote + "/" + branch)
+    })
+    .then(function () {
+
+      var opts = { checkoutStrategy: git.Checkout.STRATEGY.FORCE };
+      return git.Checkout.head(repo, opts);
+
+    })    
+
+    .catch(function(err) {
+      if (err.toString() === "[object Index]") {
+        // there are conflicts
+        var index = err;
+        return Promise.reject(new Error("Can't merge because of conflicts... Please resolve manually."));
+      }
+      return Promise.reject(_.isError(err) ? err : new Error(err.toString()));
+    })
+}
+
+function push(repo, remote, branch) {
+  var oid,
+    index,
+    remote;
+    
+    return git.Remote.lookup(repo, remote)
+      .then(function(remote_) {
+        remote = remote_;
+
+        remote.setCallbacks({
+          credentials: credentials
+        });
+
+        // Create the push object for this remote
+        return remote.push(
+          ["refs/heads/"+branch+":refs/heads/"+branch+""],
+          null,
+          repo.defaultSignature(),
+          "Push to "+branch
+        );
+    })
+}
+
+
+function possiblyCommit(repo, author) {
+    var index,
+      oid;
+    return repo.getStatus()
+      .then(function(statuses) {
+        if (statuses && countChanges(statuses) > 0) {
+          status = statusArray(statuses);
+          return repo.openIndex()
+        }
+        // the working tree is clean
+        throw new errors.ValidationError("Nothing to commit", "statuses.length")
+
+      })
+      .then(function(index_) {
+        index = index_;
+        return index.addAll("ghost")
+          .then(function() {
+            return index.write();
+          })
+          .then(function() {
+            return index.writeTree();
+          })
+          .then(function(oid_) {
+            oid = oid_;
+            return git.Reference.nameToId(repo, "HEAD");
+          })
+          .then(function(head) {
+            return repo.getCommit(head);
+          })
+
+      })
+      .then(function(parent) {
+
+        return repo.createCommit("HEAD", author, committer, "Auto-commit by editor.zoined.com", oid, [parent]);
+      })
+
+}
 
 /**
  * ## commits API Methods
@@ -94,6 +195,14 @@ commits = {
 
   },
 
+  pull: function(options) {
+    var options = options ||  {};
+    return getRepo()
+      .then(function(repo) {
+        return pull(repo, options.remote || "origin", options.branch || "master")
+      })
+  },
+
   /**
    * ### Add tag
    * @param {Tag} object the tag to create
@@ -108,73 +217,47 @@ commits = {
       status,
       entryCount;
 
+    console.log(options)
+    var author = git.Signature.now("Ghost Author", "ville.vaananen@zoined.com");
+
     options = options || {};
     var target = options.target || "devsite";
 
     return getRepo()
       .then(function(repo_) {
         repo = repo_;
-        return repo.getStatus() //repo.openIndex();
+        return possiblyCommit(repo, author);
       })
-      .then(function(statuses) {
-        if (statuses && countChanges(statuses) > 0) {
-          status = statusArray(statuses);
-          return repo.openIndex()
+      .then(function(){
+        // THERE WAS SOMETHING TO COMMIT
+        return pull(repo, "origin", "master")
+          .then(function(){
+            return push(repo, "origin", "master")
+          }, function(err) {
+            return Promise.reject(err); // probably a merge conflict
+          })
+          .then(function(){
+            return ["committed", "pulled", "pushed"]
+          })
+
+      }, function(err){
+        // NOTHING TO COMMIT
+        if(!(err.name && err.name === "ValidationError" )) {
+          throw err;
         }
-        return Promise.reject(new errors.ValidationError("Nothing to commit", "statuses.length"))
+        // still update
+        return pull(repo, "origin", "master")
+          .then(function(){
+            return ["pulled"]
+          }, function(err) {
+            return Promise.reject(err); // probably a merge conflict
+          })
 
       })
-      .then(function(index_) {
-        index = index_
-        return index.addAll("ghost") //repo.openIndex();
-      })
-      .then(function() {
-        return index.write();
-      })
-      .then(function() {
-        return index.writeTree();
-      })
-      .then(function(oid_) {
-        oid = oid_;
-        return git.Reference.nameToId(repo, "HEAD");
-      })
-      .then(function(head) {
-        return repo.getCommit(head);
-      })
-      .then(function(parent) {
-        var author = git.Signature.now("Ghost Author", "ville.vaananen@zoined.com");
-        var committer = git.Signature.now("Ghost Editor", "tech@zoined.com");
-
-        return repo.createCommit("HEAD", author, committer, "Auto-commit by editor.zoined.com", oid, [parent]);
-      })
-      .then(function() {
-        return git.Remote.lookup(repo, "origin")
-      })
-      .then(function(remote_) {
-        remote = remote_;
-
-        remote.setCallbacks({
-          credentials: function(url, userName) {
-            var privateKey = config.privateKey || '/Users/dennari/.ssh/id_rsa'
-            var publicKey = config.publicKey || '/Users/dennari/.ssh/id_rsa.pub'
-              //console.log(publicKey)
-            return git.Cred.sshKeyNew(userName, publicKey, privateKey, '');
-          }
-        });
-
-        // Create the push object for this remote
-        return remote.push(
-          ["refs/heads/master:refs/heads/master"],
-          null,
-          repo.defaultSignature(),
-          "Push to master");
-
-      }).then(function(result) {
+      .then(function(sequence) {
         return {
-          pushResult: result,
-          status: status,
-          target: target,
-          entryCount: entryCount
+          sequence: sequence,
+          target: target
         }
       }).catch(function(err) {
 

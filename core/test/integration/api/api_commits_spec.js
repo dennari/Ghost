@@ -1,10 +1,12 @@
 /*globals describe, before, beforeEach, afterEach, it */
 /*jshint expr:true*/
 
-// var config = require('../../../server/config'),
-//   configFile = require('../../../../config')[process.env.NODE_ENV];
+var config = require('../../../server/config'),
+configFile = require('../../../../config')['testing'];
+config.init(configFile);
 
-// config.init(configFile);
+var fs = require('fs')
+var crypto = require('crypto')
 
 var testUtils = require('../../utils'),
   should = require('should'),
@@ -25,8 +27,8 @@ describe('Commits API', function() {
 
   describe('Add', function() {
 
-    it('can push to github', function(done) {
-      CommitAPI.add(testUtils.context.admin)
+    it.skip('can pull from github', function(done) {
+      CommitAPI.pull(testUtils.context.admin)
         .then(function(results) {
           console.log(results)
           should.exist(results);
@@ -34,9 +36,29 @@ describe('Commits API', function() {
         }).catch(done);
     });
 
+
+    it('can sync with remote without losing local changes', function(done) {
+      var md5 = crypto.createHash('md5');
+      var timestamp = Date.now().toString();
+      md5.update(timestamp)
+      var changedFile = config.paths.contentPath + "/unitTestFile" + md5.digest('hex') + ".md"
+      fs.writeFileSync(changedFile, timestamp.toString());
+
+      CommitAPI.add(testUtils.context.admin)
+        .then(function(results) {
+          console.log(results)
+          should.exist(results);
+      
+          var readTimestamp = fs.readFileSync(changedFile, {encoding: 'utf8'});
+          readTimestamp.should.equal(timestamp.toString())
+
+          done();
+        }).catch(done);
+    });
+
   });
 
-  describe('Browse', function() {
+  describe.skip('Browse', function() {
     it('can browse (internal)', function(done) {
       CommitAPI.browse(testUtils.context.internal).then(function(results) {
         console.log(results)
