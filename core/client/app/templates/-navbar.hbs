@@ -18,12 +18,34 @@
     {{/link-to}}
     {{/unless}}
 
-    <button type="button" 
-    style="margin-top: 15px;"
-    {{action "commit" "devsite"}} 
-    {{bind-attr class=":btn :btn-sm view.isDangerous:btn-red:btn-blue :js-publish-button" }}>
-        Synchronize
-    </button>
+    <section class="splitbtn js-publish-splitbtn" style="margin-top: 15px;">
+        <button type="button" 
+            {{action "commit"}} 
+            {{bind-attr class=":btn :btn-sm toProduction:btn-red:btn-blue isSynchronizing:disabled :js-publish-button" }}>
+            Synchronize
+        </button>
+    {{#gh-dropdown-button dropdownName="synchronize-menu" classNameBindings=":btn :btn-sm toProduction:btn-red:btn-blue btnopen:active :dropdown-toggle :down"}}
+        <i class="options"></i>
+        <span class="sr-only">Toggle Settings Menu</span>
+    {{/gh-dropdown-button}}
+    {{#gh-dropdown name="synchronize-menu" closeOnClick="true" tagName="div" classNames="dropdown editor-options"}}
+        <ul class="dropdown-menu dropdown-triangle-top-left" style="top: 43px; left: 75%;">
+            <li {{bind-attr class="toProduction::active"}}>
+                <a {{action "setSyncType" "development"}} href="#">Devsite</a>
+            </li>
+            <li {{bind-attr class="toProduction:active"}}>
+                <a {{action "setSyncType" "production"}} href="#">Production</a>
+            </li>
+        </ul>
+    {{/gh-dropdown}}
+    </section>
+
+
+
+
+
+
+
     
 {{!--     <button type="button" {{action "commit" "production"}} {{bind-attr class=":btn :btn-sm view.isDangerous:btn-red:btn-blue :js-publish-button" }}>Production</button> 
  --}}

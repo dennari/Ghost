@@ -37,17 +37,18 @@ describe('Commits API', function() {
     });
 
 
-    it('can sync with remote without losing local changes', function(done) {
+    it.skip('can sync with remote master without losing local changes', function(done) {
       var md5 = crypto.createHash('md5');
       var timestamp = Date.now().toString();
       md5.update(timestamp)
       var changedFile = config.paths.contentPath + "/unitTestFile" + md5.digest('hex') + ".md"
       fs.writeFileSync(changedFile, timestamp.toString());
 
-      CommitAPI.add(testUtils.context.admin)
+      CommitAPI.add({target: "devsite"}, testUtils.context.admin)
         .then(function(results) {
           console.log(results)
           should.exist(results);
+          results.target.should.equal("devsite")
       
           var readTimestamp = fs.readFileSync(changedFile, {encoding: 'utf8'});
           readTimestamp.should.equal(timestamp.toString())
@@ -55,6 +56,18 @@ describe('Commits API', function() {
           done();
         }).catch(done);
     });
+
+    it('can push to production', function(done) {
+      
+      CommitAPI.add({target: "production"}, testUtils.context.admin)
+        .then(function(results) {
+          console.log(results)
+          should.exist(results);
+          results.target.should.equal("production")
+          done();
+        }).catch(done);
+      });
+
 
   });
 
